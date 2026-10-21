@@ -51,8 +51,8 @@ make test-all IMAGE_REPOSITORY=registry.example.com/alpine-php-fpm
 
 The example GitHub Actions workflow can be started from the repository's
 **Actions** tab with **Run workflow**. Select one of the supported exact PHP
-versions from the dropdown. The workflow builds on an x86 GitHub-hosted runner
-and publishes a `linux/amd64` image to:
+versions from the dropdown. The workflow builds on a 16-core x86 larger runner,
+uses a version-specific BuildKit cache, and publishes a `linux/amd64` image to:
 
 ```text
 ghcr.io/OWNER/REPOSITORY:8.2.35
@@ -62,6 +62,11 @@ ghcr.io/OWNER/REPOSITORY:8.2
 The tags reflect the selected release. The workflow also creates or updates a
 GitHub release whose tag is the exact PHP version and records the immutable
 container digest.
+
+The workflow uses GitHub's `ubuntu-latest-16-cores` larger-runner label. Larger
+runners require an organization on GitHub Team or GitHub Enterprise Cloud with
+billing enabled. If your organization instead provisions a custom-named larger
+runner, update the workflow's `runs-on` value to match that label.
 
 Use this image behind a FastCGI-capable web server on a private container
 network. Do not publish FPM port 9000 directly to the internet.

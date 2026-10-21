@@ -22,8 +22,8 @@ env:
 
 jobs:
   build-and-push:
-    # GitHub's standard ubuntu-24.04 hosted runner is x86_64.
-    runs-on: ubuntu-24.04
+    # GitHub's managed 16-core Ubuntu larger runner uses x86_64 hardware.
+    runs-on: ubuntu-latest-16-cores
 
     steps:
       - name: Check out source
@@ -84,6 +84,8 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          cache-from: type=gha,scope=php-${{ steps.config.outputs.version }}-amd64
+          cache-to: type=gha,mode=max,scope=php-${{ steps.config.outputs.version }}-amd64
           build-args: |
             ALPINE_VERSION=3.24
             PHP_VERSION=${{ steps.config.outputs.version }}

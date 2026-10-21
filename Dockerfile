@@ -2,10 +2,10 @@ ARG ALPINE_VERSION=3.24
 FROM alpine:${ALPINE_VERSION}
 
 ARG ALPINE_VERSION
-ARG PHP_VERSION=8.4.27
-ARG PHP_SERIES=8.4
-ARG PHP_SHA256=dcf93923b0e38e0d5252b25b796520b5a47761a08b3488b6d0b5d1115764d3f0
-ARG PHP_GPG_KEYS="AFD8691FDAEDF03BDF6E460563F15A9B715376CA 9D7F99A0CB8F05C8A6958D6256A97AF7600A39A6 0616E93D95AF471243E26761770426E17EBBB3DD"
+ARG PHP_VERSION=8.5.12
+ARG PHP_SERIES=8.5
+ARG PHP_SHA256=08bc2eba2a588654ade1357174aa646b761556c862dda0678345ee29ed481209
+ARG PHP_GPG_KEYS="1198C0117593497A5EC5C199286AF1F9897469DC 49D9AF6BC72A80D6691719C8AA23F5BE9C7097D4 D95C03BC702BE9515344AE3374E44BC9067701A5"
 
 # Kept in the runtime image so downstream images can use docker-php-ext-*.
 ENV PHPIZE_DEPS="autoconf dpkg-dev dpkg file g++ gcc libc-dev make pkgconf re2c" \
@@ -117,7 +117,14 @@ RUN set -eux; \
     rm -rf /tmp/pear ~/.pearrc; \
     php --version
 
-RUN docker-php-ext-enable opcache sodium
+# OPcache is mandatory and built in as of PHP 8.5. Earlier releases still
+# build it as a shared module, matching their official Docker image recipes.
+RUN set -eux; \
+    if [ "$PHP_SERIES" = '8.5' ]; then \
+        docker-php-ext-enable sodium; \
+    else \
+        docker-php-ext-enable opcache sodium; \
+    fi
 
 ENTRYPOINT ["docker-php-entrypoint"]
 WORKDIR /var/www/html

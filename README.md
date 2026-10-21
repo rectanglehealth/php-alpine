@@ -1,8 +1,8 @@
 # Alpine PHP-FPM base image
 
-PHP 8.2.35, 8.3.36, and 8.4.27 compiled from their official source tarballs on
-Alpine 3.24. These builds do not depend on Alpine PHP packages or prebuilt
-`php:*` runtime images.
+PHP 8.2.35, 8.3.36, 8.4.27, and 8.5.12 compiled from their official source
+tarballs on Alpine 3.24. These builds do not depend on Alpine PHP packages or
+prebuilt `php:*` runtime images.
 
 The build intentionally matches the official PHP Alpine FPM image:
 
@@ -31,6 +31,7 @@ Or build one release:
 make test-8.2
 make test-8.3
 make test-8.4
+make test-8.5
 ```
 
 Each build produces an exact-patch tag and a minor-series alias:
@@ -40,6 +41,7 @@ Each build produces an exact-patch tag and a minor-series alias:
 | PHP 8.2.35 | `alpine-php-fpm:8.2.35`, `alpine-php-fpm:8.2` |
 | PHP 8.3.36 | `alpine-php-fpm:8.3.36`, `alpine-php-fpm:8.3` |
 | PHP 8.4.27 | `alpine-php-fpm:8.4.27`, `alpine-php-fpm:8.4` |
+| PHP 8.5.12 | `alpine-php-fpm:8.5.12`, `alpine-php-fpm:8.5` |
 
 To use another repository name:
 

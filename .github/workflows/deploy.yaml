@@ -14,7 +14,7 @@ on:
           - 8.4.27
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 env:
@@ -78,7 +78,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push AMD64 image
-        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -99,62 +98,3 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.config.outputs.version }}
-
-      - name: Create or update GitHub release
-        uses: actions/github-script@v7
-        env:
-          VERSION: ${{ steps.config.outputs.version }}
-          SERIES: ${{ steps.config.outputs.series }}
-          IMAGE: ${{ steps.config.outputs.image }}
-          DIGEST: ${{ steps.build.outputs.digest }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const tag = process.env.VERSION;
-            const image = process.env.IMAGE;
-            const digest = process.env.DIGEST;
-
-            const body = `# PHP ${tag} Alpine FPM
-
-            The x86-64 image has been published to GitHub Container Registry.
-
-            ## Images
-
-            \`\`\`
-            docker pull ${image}:${tag}
-            docker pull ${image}:${process.env.SERIES}
-            docker pull ${image}@${digest}
-            \`\`\`
-
-            **Platform:** \`linux/amd64\`
-
-            **Digest:** \`${digest}\`
-            `;
-
-            let release;
-            try {
-              release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-              await github.rest.repos.createRelease({
-                owner,
-                repo,
-                tag_name: tag,
-                target_commitish: context.sha,
-                name: `PHP ${tag} Alpine FPM`,
-                body,
-                draft: false,
-                prerelease: false,
-              });
-              return;
-            }
-
-            await github.rest.repos.updateRelease({
-              owner,
-              repo,
-              release_id: release.data.id,
-              name: `PHP ${tag} Alpine FPM`,
-              body,
-            });

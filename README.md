@@ -59,9 +59,9 @@ ghcr.io/OWNER/REPOSITORY:8.2.35
 ghcr.io/OWNER/REPOSITORY:8.2
 ```
 
-The tags reflect the selected release. The workflow also creates or updates a
-GitHub release whose tag is the exact PHP version and records the immutable
-container digest.
+The tags reflect the selected release. Publishing to GHCR does not create a
+GitHub Release or Git tag, so the workflow only requires package-write access
+and is not affected by repository tag-creation restrictions.
 
 The workflow uses GitHub's `ubuntu-latest-16-cores` larger-runner label. Larger
 runners require an organization on GitHub Team or GitHub Enterprise Cloud with

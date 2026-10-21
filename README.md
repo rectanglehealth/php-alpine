@@ -93,5 +93,11 @@ locally:
 make test-frankenphp
 ```
 
-Use this image behind a FastCGI-capable web server on a private container
-network. Do not publish FPM port 9000 directly to the internet.
+The workflow publishes the intermediate ZTS base as
+`ghcr.io/OWNER/frankenphp:php-base-8.3.36-alpine3.24`; it exists only as the
+input to the final FrankenPHP build.
+
+Use the PHP-FPM images behind a FastCGI-capable web server on a private
+container network, and do not publish FPM port 9000 directly to the internet.
+FrankenPHP is the HTTP server itself and exposes ports 80, 443, 443/udp, and
+2019 using its upstream defaults.

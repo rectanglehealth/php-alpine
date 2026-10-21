@@ -12,6 +12,14 @@ on:
           - 8.2.35
           - 8.3.36
           - 8.4.27
+      runner:
+        description: X86 runner size (16-core requires a configured larger runner)
+        required: true
+        type: choice
+        default: ubuntu-latest
+        options:
+          - ubuntu-latest
+          - ubuntu-latest-16-cores
 
 permissions:
   contents: read
@@ -22,8 +30,9 @@ env:
 
 jobs:
   build-and-push:
-    # GitHub's managed 16-core Ubuntu larger runner uses x86_64 hardware.
-    runs-on: ubuntu-latest-16-cores
+    # Both choices are x86_64. The standard runner is always the safe default;
+    # the larger-runner choice requires organization-level availability.
+    runs-on: ${{ inputs.runner }}
 
     steps:
       - name: Check out source

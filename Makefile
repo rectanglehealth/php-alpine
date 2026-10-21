@@ -1,6 +1,15 @@
 IMAGE_REPOSITORY ?= alpine-php-fpm
 ALPINE_VERSION ?= 3.24
 
+FRANKENPHP_IMAGE_REPOSITORY ?= frankenphp
+FRANKENPHP_VERSION := 1.13.1
+FRANKENPHP_PHP_VERSION := 8.3.36
+FRANKENPHP_COMMIT := 99d4e119ca2e5a90a69d8dbee5d5c9a8016416c5
+FRANKENPHP_PHP_BASE_IMAGE := frankenphp-php-base:8.3.36-alpine3.24
+FRANKENPHP_PHP_BASE := docker-image://$(FRANKENPHP_PHP_BASE_IMAGE)
+FRANKENPHP_GO_BASE := docker-image://golang:1.27-alpine3.24@sha256:f2c872bcee949b7be9c490efd02b48a8a2fbf947cdf533f1c58525ec9d8170fd
+FRANKENPHP_IMAGE := $(FRANKENPHP_IMAGE_REPOSITORY):$(FRANKENPHP_VERSION)-php$(FRANKENPHP_PHP_VERSION)-alpine3.24
+
 PHP_82_VERSION := 8.2.35
 PHP_82_SHA256 := 5737b98601fe5ab1b8c5db0c82ed3158acb9283ed3081ffe2faffb9ac81455e6
 PHP_82_GPG_KEYS := 39B641343D8C104B2B146DC3F9C39DC0B9698544 E60913E4DF209907D8E30D96659A97C9CF2A795A 1198C0117593497A5EC5C199286AF1F9897469DC
@@ -27,7 +36,8 @@ IMAGE_ALIAS ?= $(IMAGE_REPOSITORY):8.5
 
 .PHONY: build test build-all test-all \
 	build-8.2 build-8.3 build-8.4 build-8.5 \
-	test-8.2 test-8.3 test-8.4 test-8.5
+	test-8.2 test-8.3 test-8.4 test-8.5 \
+	build-frankenphp test-frankenphp
 
 build:
 	docker build --pull \
@@ -82,3 +92,23 @@ test-8.5:
 build-all: build-8.2 build-8.3 build-8.4 build-8.5
 
 test-all: test-8.2 test-8.3 test-8.4 test-8.5
+
+build-frankenphp:
+	docker buildx build --load --pull \
+		--platform linux/amd64 \
+		--file frankenphp/php-zts.Dockerfile \
+		--tag $(FRANKENPHP_PHP_BASE_IMAGE) .
+	docker buildx build --load --pull \
+		--platform linux/amd64 \
+		--build-context php-base=$(FRANKENPHP_PHP_BASE) \
+		--build-context golang-base=$(FRANKENPHP_GO_BASE) \
+		--file alpine.Dockerfile \
+		--target runner \
+		--build-arg FRANKENPHP_VERSION=$(FRANKENPHP_VERSION) \
+		--tag $(FRANKENPHP_IMAGE) \
+		https://github.com/php/frankenphp.git#$(FRANKENPHP_COMMIT)
+
+test-frankenphp: build-frankenphp
+	docker run --rm --platform linux/amd64 $(FRANKENPHP_IMAGE) php -r \
+		'exit(PHP_VERSION === "$(FRANKENPHP_PHP_VERSION)" && PHP_ZTS === 1 ? 0 : 1);'
+	docker run --rm --platform linux/amd64 $(FRANKENPHP_IMAGE) frankenphp version | grep -F '$(FRANKENPHP_VERSION)'

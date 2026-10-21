@@ -70,5 +70,28 @@ unavailable larger-runner pool. Select `ubuntu-latest-16-cores` only after that
 larger runner is available to the repository. Larger runners require an
 organization on GitHub Team or GitHub Enterprise Cloud with billing enabled.
 
+## FrankenPHP image
+
+FrankenPHP is built and released separately from the PHP-FPM images because it
+requires a thread-safe (ZTS) PHP build. The dedicated **Build and release
+FrankenPHP image** workflow builds FrankenPHP 1.13.1 against PHP 8.3.36 ZTS on
+Alpine 3.24 and publishes these AMD64 tags:
+
+```text
+ghcr.io/OWNER/frankenphp:1.13.1-php8.3.36-alpine3.24
+ghcr.io/OWNER/frankenphp:1.13.1-php8.3.36-alpine
+ghcr.io/OWNER/frankenphp:1.13.1-php8.3-alpine
+```
+
+Because Docker Hub's PHP 8.3.36 ZTS Alpine tag currently has an empty manifest,
+the workflow first compiles an exact PHP 8.3.36 ZTS base from the authenticated
+PHP source archive. It then builds the pinned FrankenPHP source commit using
+that base and a pinned Go base-image digest. To build and verify the same image
+locally:
+
+```sh
+make test-frankenphp
+```
+
 Use this image behind a FastCGI-capable web server on a private container
 network. Do not publish FPM port 9000 directly to the internet.

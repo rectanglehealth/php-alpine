@@ -1,0 +1,86 @@
+name: Build and release FrankenPHP image
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: X86 runner size (16-core requires a configured larger runner)
+        required: true
+        type: choice
+        default: ubuntu-latest
+        options:
+          - ubuntu-latest
+          - ubuntu-latest-16-cores
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  FRANKENPHP_VERSION: 1.13.1
+  PHP_VERSION: 8.3.36
+  ALPINE_VERSION: '3.24'
+  FRANKENPHP_COMMIT: 99d4e119ca2e5a90a69d8dbee5d5c9a8016416c5
+  GO_BASE: docker-image://golang:1.27-alpine3.24@sha256:f2c872bcee949b7be9c490efd02b48a8a2fbf947cdf533f1c58525ec9d8170fd
+
+jobs:
+  build-and-push:
+    # Both choices are x86_64. The larger-runner choice requires
+    # organization-level availability.
+    runs-on: ${{ inputs.runner }}
+
+    steps:
+      - name: Prepare image name
+        id: config
+        shell: bash
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "image=$REGISTRY/${OWNER,,}/frankenphp" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push PHP 8.3.36 ZTS base
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frankenphp/php-zts.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.config.outputs.image }}:php-base-8.3.36-alpine3.24
+          cache-from: type=gha,scope=frankenphp-php-base-8.3.36-amd64
+          cache-to: type=gha,mode=max,scope=frankenphp-php-base-8.3.36-amd64
+
+      - name: Build and push AMD64 FrankenPHP image
+        uses: docker/build-push-action@v6
+        with:
+          context: https://github.com/php/frankenphp.git#${{ env.FRANKENPHP_COMMIT }}
+          file: alpine.Dockerfile
+          target: runner
+          platforms: linux/amd64
+          push: true
+          build-contexts: |
+            php-base=docker-image://${{ steps.config.outputs.image }}:php-base-8.3.36-alpine3.24
+            golang-base=${{ env.GO_BASE }}
+          build-args: |
+            FRANKENPHP_VERSION=${{ env.FRANKENPHP_VERSION }}
+          secrets: |
+            github-token=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha,scope=frankenphp-${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-amd64
+          cache-to: type=gha,mode=max,scope=frankenphp-${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-amd64
+          tags: |
+            ${{ steps.config.outputs.image }}:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-alpine${{ env.ALPINE_VERSION }}
+            ${{ steps.config.outputs.image }}:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-alpine
+            ${{ steps.config.outputs.image }}:${{ env.FRANKENPHP_VERSION }}-php8.3-alpine
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ env.FRANKENPHP_COMMIT }}
+            org.opencontainers.image.version=${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}
